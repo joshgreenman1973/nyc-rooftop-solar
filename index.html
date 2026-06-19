@@ -58,6 +58,12 @@
   #legend .item{display:flex;align-items:center;gap:7px;margin:4px 0;color:#c7d2e0}
   #legend .dot{width:11px;height:11px;border-radius:50%}
 
+  #yearchart{left:50%;transform:translateX(-50%);bottom:100px;width:min(520px,calc(100% - 32px));padding:10px 14px 7px}
+  #yearchart .ttl{font-size:11px;color:var(--muted);text-transform:uppercase;letter-spacing:0.06em;margin-bottom:6px}
+  #yearchart #hx-peak{color:#caa23a;text-transform:none;letter-spacing:0;margin-left:6px}
+  #yearchart canvas{display:block;width:100%;height:78px}
+  #yearchart .hx{display:flex;justify-content:space-between;font-size:10.5px;color:#7d8b9d;margin-top:3px}
+
   #dock{position:absolute;left:50%;transform:translateX(-50%);bottom:18px;z-index:600;
     width:min(900px,calc(100% - 32px));padding:12px 18px;display:flex;align-items:center;gap:14px;
     background:var(--panel);backdrop-filter:blur(10px);-webkit-backdrop-filter:blur(10px);
@@ -137,6 +143,12 @@
   <div id="leg-items"></div>
 </div>
 
+<div id="yearchart" class="panel">
+  <div class="ttl">Installations per year <span id="hx-peak"></span></div>
+  <canvas id="histo"></canvas>
+  <div class="hx"><span id="hx-min">2002</span><span id="hx-max">2026</span></div>
+</div>
+
 <div id="dock">
   <button id="play" aria-label="Play">&#9658;</button>
   <input type="range" id="scrub" min="0" max="1000" value="0" step="1" />
@@ -145,7 +157,6 @@
     <option value="solar">Solar (all)</option>
     <option value="boro">Borough</option>
     <option value="sector">Home vs. business</option>
-    <option value="dac">Disadvantaged community</option>
   </select>
 </div>
 
@@ -155,7 +166,6 @@
 const BOROS = ["Manhattan","Bronx","Brooklyn","Queens","Staten Island"];
 const BORO_COL = ["#7cc4ff","#ff8fb0","#9b8cff","#ffc640","#5fe3c0"];
 const SECTOR_COL = ["#ffc640","#5fd0ff"];
-const DAC_COL = ["#5c6b7a", "#ff7aa8"];
 const AREA = [22.83,42.10,69.40,108.53,58.37];                   // land sq mi (Census)
 const POP  = [1694251,1472654,2736074,2405464,495747];           // 2020 Census
 const BTITLES = {total:"Installations by borough", permi:"Installations per square mile", percap:"Installations per 10,000 residents"};
@@ -182,7 +192,27 @@ const fx = document.getElementById('fx');
 const ctx = fx.getContext('2d');
 const acc = document.createElement('canvas');
 const actx = acc.getContext('2d');
+const histoEl = document.getElementById('histo');
+const hctx = histoEl.getContext('2d');
+let yearCounts=[], HMAX=1;
 let dpr = Math.min(window.devicePixelRatio||1, 2);
+
+function sizeHisto(){
+  const w=histoEl.clientWidth, h=histoEl.clientHeight;
+  histoEl.width=w*dpr; histoEl.height=h*dpr; hctx.setTransform(dpr,0,0,dpr,0,0);
+}
+function drawHisto(){
+  if(!yearCounts.length) return;
+  const w=histoEl.clientWidth, h=histoEl.clientHeight;
+  hctx.clearRect(0,0,histoEl.width,histoEl.height);
+  const n=yearCounts.length, gap=2, bw=(w-(n-1)*gap)/n;
+  const curYr=Math.min(Math.floor(t),yMax);
+  for(let i=0;i<n;i++){
+    const yr=yMin+i, bh=Math.max(1,(yearCounts[i]/HMAX)*(h-3)), x=i*(bw+gap), y=h-bh;
+    hctx.fillStyle = yr>curYr ? 'rgba(255,255,255,0.13)' : (yr===curYr ? '#ffd266' : '#caa23a');
+    hctx.fillRect(x,y,bw,bh);
+  }
+}
 
 let PTS=[], YEARS=[], yMin=2002, yMax=2026;
 let perYearIdx=[];      // index in PTS where each year starts
@@ -202,12 +232,12 @@ function sizeCanvas(){
   dpr = Math.min(window.devicePixelRatio||1, 2);
   for(const c of [fx,acc]){ c.width=w*dpr; c.height=h*dpr; c.style.width=w+'px'; c.style.height=h+'px'; }
   ctx.setTransform(dpr,0,0,dpr,0,0); actx.setTransform(dpr,0,0,dpr,0,0);
+  sizeHisto();
 }
 
 function colorFor(p){
   if(colorMode==='boro') return BORO_COL[p[6]];
   if(colorMode==='sector') return SECTOR_COL[p[4]];
-  if(colorMode==='dac') return p[5]?DAC_COL[1]:DAC_COL[0];
   return '#ffc640';
 }
 function radiusFor(p){
@@ -276,6 +306,7 @@ function draw(){
   }
   ctx.globalAlpha=1; ctx.globalCompositeOperation='source-over';
   updateHUD(yr, frac);
+  drawHisto();
 }
 
 function updateHUD(yr, frac){
@@ -334,7 +365,6 @@ function buildLegend(){
   let items=[];
   if(colorMode==='boro'){ t.textContent='Borough'; items=BOROS.map((n,i)=>[BORO_COL[i],n]); }
   else if(colorMode==='sector'){ t.textContent='Sector'; items=[[SECTOR_COL[0],'Home (residential)'],[SECTOR_COL[1],'Business / other']]; }
-  else if(colorMode==='dac'){ t.textContent='Disadvantaged community'; items=[[DAC_COL[1],'Inside a NYS DAC'],[DAC_COL[0],'Outside']]; }
   else { t.textContent='Each dot = one project'; items=[['#ffc640','Completed solar install']]; }
   box.innerHTML=items.map(([c,l])=>`<div class="item"><span class="dot" style="background:${c}"></span>${l}</div>`).join('');
 }
@@ -376,6 +406,12 @@ fetch('data/solar.json').then(r=>r.json()).then(data=>{
     FINALMAX[m]=Math.max(...vals)||1;
     ORDER[m]=[0,1,2,3,4].slice().sort((a,b)=>vals[b]-vals[a]);
   }
+  yearCounts = YEARS.map((_,k)=> perYearIdx[k+1]-perYearIdx[k]);
+  HMAX = Math.max(...yearCounts)||1;
+  const pk = yearCounts.indexOf(HMAX);
+  document.getElementById('hx-peak').textContent = '· peak '+(yMin+pk)+' ('+HMAX.toLocaleString()+')';
+  document.getElementById('hx-min').textContent = yMin;
+  document.getElementById('hx-max').textContent = yMax;
   buildBoros(); buildLegend(); sizeCanvas();
   t=yMin; resetView();
   requestAnimationFrame(tick);
