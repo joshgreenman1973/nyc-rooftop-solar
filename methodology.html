@@ -1,0 +1,84 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Methodology - New York City rooftop solar map</title>
+<style>
+  body{margin:0;background:#0a0e14;color:#e7edf4;
+    font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Helvetica,Arial,sans-serif;
+    line-height:1.6;-webkit-font-smoothing:antialiased}
+  .wrap{max-width:760px;margin:0 auto;padding:48px 24px 80px}
+  h1{font-size:27px;font-weight:600;letter-spacing:-0.01em;margin:0 0 4px}
+  .sub{color:#9aa7b8;margin:0 0 32px}
+  h2{font-size:18px;font-weight:600;margin:30px 0 8px;color:#ffc640}
+  p,li{font-size:15px;color:#cdd6e2}
+  a{color:#ffc640}
+  code{background:#161c27;padding:1px 6px;border-radius:5px;font-size:13px;color:#cfe}
+  table{border-collapse:collapse;width:100%;margin:12px 0;font-size:14px}
+  th,td{border:1px solid #232c3a;padding:7px 10px;text-align:left}
+  th{background:#141a24;color:#9aa7b8;font-weight:500}
+  .back{display:inline-block;margin-bottom:24px;color:#9aa7b8;text-decoration:none}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <a class="back" href="index.html">&larr; Back to the map</a>
+  <h1>Methodology</h1>
+  <p class="sub">New York City rooftop solar, 2002 to 2026</p>
+
+  <h2>What the map shows</h2>
+  <p>Each dot is one completed solar electric project in one of the five boroughs of New York City, drawn at its reported location. As the timeline plays, projects appear in the year their incentive application was received, so the animation traces where and when solar spread across the city.</p>
+
+  <h2>Data source</h2>
+  <p>All points come from a single public dataset: <a href="https://data.ny.gov/d/3x8r-34rs" target="_blank" rel="noopener">Solar Electric Programs Reported by NYSERDA: Beginning 2000</a>, published by the New York State Energy Research and Development Authority on the NY Open Data portal (dataset id <code>3x8r-34rs</code>). The data used here was pulled in June 2026.</p>
+  <p>This dataset covers projects that went through NYSERDA's NY-Sun incentive program. It is the most complete public, address-level record of distributed solar in New York, but it is not a literal census of every panel ever installed: systems built entirely outside NYSERDA programs may not appear, and utility-scale projects larger than 5 megawatts (alternating current) are excluded by NYSERDA. In practice, the overwhelming majority of residential and small-commercial rooftop systems in New York City run through NY-Sun, so coverage of the rooftop segment shown here is high.</p>
+  <p>New York City does not publish a more complete address-level alternative. The city's own solar datasets are narrow (the Local Law 24 set covers only city-owned buildings). The genuinely exhaustive records sit with the utility (Con Edison interconnection) and the Department of Buildings (DOB NOW solar job filings), neither of which is released as a clean point-level public dataset.</p>
+
+  <h2>Filters applied</h2>
+  <ul>
+    <li><strong>Geography:</strong> county is one of Bronx, Kings (Brooklyn), New York (Manhattan), Queens or Richmond (Staten Island).</li>
+    <li><strong>Status:</strong> <code>project_status = "Complete"</code>. Pipeline (not-yet-built) projects are excluded.</li>
+    <li><strong>Location:</strong> a valid latitude and longitude is present, and the point falls within a New York City bounding box (40.45 to 40.95 N, -74.30 to -73.65 W). A small number of records with missing or out-of-range coordinates are dropped.</li>
+  </ul>
+  <p>After filtering, the map contains <strong>59,455 completed installations</strong> totaling <strong>about 613 megawatts</strong> of nameplate direct-current capacity.</p>
+
+  <h2>How each field is used</h2>
+  <table>
+    <tr><th>Map element</th><th>Source field</th></tr>
+    <tr><td>Dot position</td><td><code>latitude</code> / <code>longitude</code> (NYSERDA-geocoded)</td></tr>
+    <tr><td>Year on the timeline</td><td><code>date_application_received</code> (year)</td></tr>
+    <tr><td>Dot size</td><td><code>totalnameplatekwdc</code> (larger systems read larger)</td></tr>
+    <tr><td>Home vs. business color</td><td><code>sector</code> (Residential vs. Non-Residential)</td></tr>
+    <tr><td>Disadvantaged-community color</td><td><code>nys_disadvantaged_community_status</code></td></tr>
+    <tr><td>Borough</td><td><code>county</code></td></tr>
+  </table>
+
+  <h2>Borough rates (per square mile and per resident)</h2>
+  <p>The borough panel can show totals, installations per square mile of land, or installations per 10,000 residents. The denominators are fixed reference values, not from the solar dataset:</p>
+  <table>
+    <tr><th>Borough</th><th>Land area (sq mi)</th><th>Population (2020)</th></tr>
+    <tr><td>Manhattan</td><td>22.83</td><td>1,694,251</td></tr>
+    <tr><td>Bronx</td><td>42.10</td><td>1,472,654</td></tr>
+    <tr><td>Brooklyn</td><td>69.40</td><td>2,736,074</td></tr>
+    <tr><td>Queens</td><td>108.53</td><td>2,405,464</td></tr>
+    <tr><td>Staten Island</td><td>58.37</td><td>495,747</td></tr>
+  </table>
+  <p>Land areas are the U.S. Census Bureau land-area figures for each county (water excluded). Population is the 2020 Decennial Census count for each county. Rates divide the cumulative installation count for the selected year by these constant denominators; the denominators do not change over the timeline, so early-year rates are indicative rather than point-in-time accurate.</p>
+
+  <h2>Assumptions and limitations</h2>
+  <ul>
+    <li><strong>Application date, not switch-on date.</strong> The timeline year is when the project's application was received, which can precede the date the system actually began producing power by months. It is used because it is populated for every record; a completion date is not consistently available.</li>
+    <li><strong>"Rooftop" is an approximation.</strong> The dataset does not flag rooftop versus ground-mount directly. In New York City, distributed residential and small-commercial solar is overwhelmingly rooftop, but a small number of canopy or other mounts are included.</li>
+    <li><strong>Counts are projects, not buildings.</strong> A single address could in principle host more than one project record.</li>
+    <li><strong>Capacity is nameplate, not output.</strong> Megawatt figures are rated direct-current capacity, not measured generation.</li>
+    <li><strong>Geocoding is as published.</strong> Positions are taken directly from NYSERDA and were not independently re-geocoded.</li>
+  </ul>
+
+  <h2>Reproducing the numbers</h2>
+  <p>The borough totals and the statewide figures can be reproduced against the live API. For example, completed New York City projects by borough:</p>
+  <p><code>https://data.ny.gov/resource/3x8r-34rs.json?$select=county,count(*),sum(totalnameplatekwdc)&amp;$where=county in('Bronx','Kings','New York','Queens','Richmond') AND project_status='Complete'&amp;$group=county</code></p>
+  <p>The exact pull and transformation script is in <code>data/fetch.py</code> in this project.</p>
+</div>
+</body>
+</html>

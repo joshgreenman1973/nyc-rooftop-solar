@@ -1,0 +1,386 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no" />
+<title>New York City rooftop solar, 2002 to 2026</title>
+<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"
+  integrity="sha256-p4NxAoJBhIIN+hmNHrzRCf9tD/miZyoHS5obTRR9BMY=" crossorigin="" />
+<style>
+  :root{
+    --bg:#0a0e14; --panel:rgba(16,21,30,0.82); --panel-solid:#10151e;
+    --line:rgba(255,255,255,0.12); --ink:#eef2f7; --muted:#9aa7b8;
+    --solar:#ffc640; --solar-glow:#ff9d2f;
+  }
+  *{box-sizing:border-box}
+  html,body{margin:0;height:100%;background:var(--bg);color:var(--ink);
+    font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Helvetica,Arial,sans-serif;
+    -webkit-font-smoothing:antialiased;overflow:hidden}
+  #map{position:absolute;inset:0;background:var(--bg);z-index:1}
+  #fx{position:absolute;inset:0;z-index:400;pointer-events:none}
+  .leaflet-container{background:var(--bg)}
+
+  .panel{position:absolute;z-index:600;background:var(--panel);
+    backdrop-filter:blur(10px);-webkit-backdrop-filter:blur(10px);
+    border:1px solid var(--line);border-radius:14px}
+
+  #header{top:16px;left:16px;max-width:430px;padding:16px 18px}
+  #header h1{margin:0;font-size:21px;font-weight:600;letter-spacing:-0.01em;line-height:1.2}
+  #header p{margin:7px 0 0;font-size:13.5px;color:var(--muted);line-height:1.45}
+  #header .src{margin-top:9px;font-size:11.5px;color:#7d8b9d}
+  #header .src a{color:#a9b6c6}
+
+  #stats{top:16px;right:16px;padding:14px 16px;text-align:right;min-width:172px}
+  #stats .yr{font-size:46px;font-weight:700;line-height:0.92;color:var(--solar);
+    font-variant-numeric:tabular-nums;letter-spacing:-0.02em}
+  #stats .row{margin-top:10px;font-variant-numeric:tabular-nums}
+  #stats .big{font-size:23px;font-weight:600;line-height:1.05}
+  #stats .lbl{font-size:11px;color:var(--muted);text-transform:uppercase;letter-spacing:0.06em}
+
+  #boros{position:absolute;left:16px;bottom:120px;z-index:600;width:262px;
+    padding:13px 15px;background:var(--panel);backdrop-filter:blur(10px);
+    -webkit-backdrop-filter:blur(10px);border:1px solid var(--line);border-radius:14px}
+  #boros .ttl{font-size:11px;color:var(--muted);text-transform:uppercase;letter-spacing:0.06em;margin-bottom:9px}
+  #boros .seg{display:flex;gap:4px;margin-bottom:11px}
+  #boros .seg button{flex:1;font-family:inherit;font-size:11px;padding:5px 0;border-radius:7px;
+    border:1px solid var(--line);background:transparent;color:#9aa7b8;cursor:pointer}
+  #boros .seg button.on{background:var(--solar);color:#1a1206;border-color:var(--solar)}
+  .brow{display:flex;align-items:center;gap:8px;margin:6px 0;font-size:12.5px}
+  .brow .nm{width:78px;color:#c7d2e0;flex:none}
+  .brow .track{flex:1;height:9px;background:rgba(255,255,255,0.07);border-radius:5px;overflow:hidden}
+  .brow .fill{height:100%;width:0;border-radius:5px;transition:width 0.25s linear}
+  .brow .ct{width:42px;text-align:right;color:#e7edf4;font-variant-numeric:tabular-nums;flex:none}
+
+  #legend{position:absolute;right:16px;bottom:120px;z-index:600;padding:11px 14px;
+    background:var(--panel);backdrop-filter:blur(10px);-webkit-backdrop-filter:blur(10px);
+    border:1px solid var(--line);border-radius:14px;font-size:12px}
+  #legend .ttl{font-size:11px;color:var(--muted);text-transform:uppercase;letter-spacing:0.06em;margin-bottom:7px}
+  #legend .item{display:flex;align-items:center;gap:7px;margin:4px 0;color:#c7d2e0}
+  #legend .dot{width:11px;height:11px;border-radius:50%}
+
+  #dock{position:absolute;left:50%;transform:translateX(-50%);bottom:18px;z-index:600;
+    width:min(900px,calc(100% - 32px));padding:12px 18px;display:flex;align-items:center;gap:14px;
+    background:var(--panel);backdrop-filter:blur(10px);-webkit-backdrop-filter:blur(10px);
+    border:1px solid var(--line);border-radius:16px}
+  #play{flex:none;width:44px;height:44px;border-radius:50%;border:none;cursor:pointer;
+    background:var(--solar);color:#1a1206;font-size:19px;display:flex;align-items:center;justify-content:center}
+  #play:hover{background:#ffd266}
+  #scrub{flex:1;-webkit-appearance:none;appearance:none;height:6px;border-radius:3px;
+    background:rgba(255,255,255,0.16);outline:none;cursor:pointer}
+  #scrub::-webkit-slider-thumb{-webkit-appearance:none;width:18px;height:18px;border-radius:50%;
+    background:var(--solar);cursor:pointer;border:2px solid #1a1206}
+  #scrub::-moz-range-thumb{width:18px;height:18px;border-radius:50%;background:var(--solar);
+    cursor:pointer;border:2px solid #1a1206}
+  .ctl-lbl{font-size:12px;color:var(--muted);flex:none}
+  select{background:var(--panel-solid);color:var(--ink);border:1px solid var(--line);
+    border-radius:8px;padding:6px 9px;font-size:12.5px;font-family:inherit;cursor:pointer}
+
+  .pill{position:absolute;z-index:650;border:none;border-radius:999px;cursor:pointer;
+    font-family:inherit;font-size:12px;padding:7px 13px}
+  #ai-btn{left:16px;top:182px;background:#7a1f2b;color:#ffe2e6}
+  #ai-btn:hover{background:#8f2533}
+  #ai-pop{position:absolute;left:16px;top:218px;z-index:660;width:300px;display:none;
+    background:#0f1a33;color:#dfe7f5;border:1px solid #29385e;border-radius:13px;padding:14px 16px;
+    font-size:12.5px;line-height:1.5}
+  #ai-pop h4{margin:0 0 6px;font-size:13px;color:#9fb6e6}
+  #ai-pop ul{margin:6px 0 0;padding-left:17px}
+  #ai-pop a{color:#9fb6e6}
+
+  @media (max-width:680px){
+    #header{max-width:none;right:16px;left:16px}
+    #stats{top:auto;bottom:200px;right:16px}
+    #boros{display:none}
+    #legend{bottom:80px;left:16px;right:auto}
+  }
+</style>
+</head>
+<body>
+<div id="map"></div>
+<canvas id="fx"></canvas>
+
+<div id="header" class="panel">
+  <h1>Where New York City went solar</h1>
+  <p>Every solar installation completed through New York's NY-Sun incentive program across the five boroughs, animated by the year its application was filed.</p>
+  <div class="src">Source: NYSERDA, Solar Electric Programs (<a href="https://data.ny.gov/d/3x8r-34rs" target="_blank" rel="noopener">data.ny.gov</a>). <a href="methodology.html" target="_blank">Methodology</a></div>
+</div>
+
+<div id="stats" class="panel">
+  <div class="yr" id="yr">2002</div>
+  <div class="row"><div class="big" id="ct">0</div><div class="lbl">installations</div></div>
+  <div class="row"><div class="big" id="mw">0</div><div class="lbl">megawatts (DC)</div></div>
+</div>
+
+<button id="ai-btn" class="pill">AI caution</button>
+<div id="ai-pop">
+  <h4>How this was made</h4>
+  This map was built with AI assistance. Steps taken to keep it accurate:
+  <ul>
+    <li>Points come straight from NYSERDA's published dataset, not estimated.</li>
+    <li>Counts and capacity were checked against the source totals.</li>
+    <li>Only completed projects with valid coordinates are shown.</li>
+  </ul>
+  <div style="margin-top:8px">Limits: positions are NYSERDA-geocoded; the year reflects the application date, not the day panels switched on. See the <a href="methodology.html" target="_blank">methodology</a>.</div>
+</div>
+
+<div id="boros">
+  <div class="ttl" id="boro-ttl">Installations by borough</div>
+  <div id="boro-metric" class="seg">
+    <button data-m="total" class="on">Total</button>
+    <button data-m="permi">Per mi&sup2;</button>
+    <button data-m="percap">Per 10k</button>
+  </div>
+  <div id="brows"></div>
+</div>
+
+<div id="legend">
+  <div class="ttl" id="leg-ttl">Each dot = one project</div>
+  <div id="leg-items"></div>
+</div>
+
+<div id="dock">
+  <button id="play" aria-label="Play">&#9658;</button>
+  <input type="range" id="scrub" min="0" max="1000" value="0" step="1" />
+  <span class="ctl-lbl">Color by</span>
+  <select id="mode">
+    <option value="solar">Solar (all)</option>
+    <option value="boro">Borough</option>
+    <option value="sector">Home vs. business</option>
+    <option value="dac">Disadvantaged community</option>
+  </select>
+</div>
+
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"
+  integrity="sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo=" crossorigin=""></script>
+<script>
+const BOROS = ["Manhattan","Bronx","Brooklyn","Queens","Staten Island"];
+const BORO_COL = ["#7cc4ff","#ff8fb0","#9b8cff","#ffc640","#5fe3c0"];
+const SECTOR_COL = ["#ffc640","#5fd0ff"];
+const DAC_COL = ["#5c6b7a", "#ff7aa8"];
+const AREA = [22.83,42.10,69.40,108.53,58.37];                   // land sq mi (Census)
+const POP  = [1694251,1472654,2736074,2405464,495747];           // 2020 Census
+const BTITLES = {total:"Installations by borough", permi:"Installations per square mile", percap:"Installations per 10,000 residents"};
+let boroMetric='total';
+let ORDER={total:[0,1,2,3,4],permi:[0,1,2,3,4],percap:[0,1,2,3,4]};
+let FINALMAX={total:1,permi:1,percap:1};
+function metricVal(cnt,b,m){ return m==='permi'?cnt/AREA[b] : m==='percap'?cnt/POP[b]*10000 : cnt; }
+function fmtMetric(v,m){ return m==='percap'? v.toFixed(1) : Math.round(v).toLocaleString(); }
+
+const map = L.map('map',{zoomControl:false,attributionControl:true,
+  zoomAnimation:false,fadeAnimation:false,minZoom:10,maxZoom:16,preferCanvas:false})
+  .setView([40.706,-73.92],11);
+L.control.zoom({position:'bottomright'}).addTo(map);
+map.setMaxBounds([[40.40,-74.35],[40.99,-73.65]]);
+L.tileLayer('https://{s}.basemaps.cartocdn.com/dark_nolabels/{z}/{x}/{y}{r}.png',{
+  subdomains:'abcd',maxZoom:19,
+  attribution:'&copy; OpenStreetMap, &copy; CARTO &nbsp;|&nbsp; data: NYSERDA / NY Open Data'
+}).addTo(map);
+L.tileLayer('https://{s}.basemaps.cartocdn.com/dark_only_labels/{z}/{x}/{y}{r}.png',{
+  subdomains:'abcd',maxZoom:19,pane:'shadowPane',opacity:0.7
+}).addTo(map);
+
+const fx = document.getElementById('fx');
+const ctx = fx.getContext('2d');
+const acc = document.createElement('canvas');
+const actx = acc.getContext('2d');
+let dpr = Math.min(window.devicePixelRatio||1, 2);
+
+let PTS=[], YEARS=[], yMin=2002, yMax=2026;
+let perYearIdx=[];      // index in PTS where each year starts
+let cumCount=[], cumMW=[];           // cumulative through end of year i
+let boroCumByYear=[];                // [yearIdx][boro] cumulative count
+let colorMode='solar';
+
+let t = 0;              // animation clock in fractional years (yMin..TMAX)
+let TMAX = 2027;        // yMax+1, so the final year fills completely
+let playing=false, lastTs=0;
+const SPEED = 2.6;      // years per second
+let stampedYear = -1;   // last year fully baked into acc
+let anchorPx0=null, anchorLL=null;
+
+function sizeCanvas(){
+  const w=map.getSize().x, h=map.getSize().y;
+  dpr = Math.min(window.devicePixelRatio||1, 2);
+  for(const c of [fx,acc]){ c.width=w*dpr; c.height=h*dpr; c.style.width=w+'px'; c.style.height=h+'px'; }
+  ctx.setTransform(dpr,0,0,dpr,0,0); actx.setTransform(dpr,0,0,dpr,0,0);
+}
+
+function colorFor(p){
+  if(colorMode==='boro') return BORO_COL[p[6]];
+  if(colorMode==='sector') return SECTOR_COL[p[4]];
+  if(colorMode==='dac') return p[5]?DAC_COL[1]:DAC_COL[0];
+  return '#ffc640';
+}
+function radiusFor(p){
+  const z=map.getZoom();
+  let r = z<=11?1.1 : z<=12?1.7 : z<=13?2.4 : z<=14?3.3 : 4.4;
+  if(p[3]>50) r*=1.7; else if(p[3]>15) r*=1.3;  // bigger arrays read larger
+  return r;
+}
+
+function stampPoint(c,p,alpha){
+  const pt = map.latLngToContainerPoint([p[1],p[0]]);
+  if(pt.x<-20||pt.y<-20||pt.x>fx.clientWidth+20||pt.y>fx.clientHeight+20) return;
+  const r=radiusFor(p);
+  const additive = colorMode==='solar';
+  c.fillStyle=colorFor(p);
+  if(additive){
+    c.globalCompositeOperation='lighter';
+    c.globalAlpha=alpha*0.85;
+    c.beginPath(); c.arc(pt.x,pt.y,r,0,6.2832); c.fill();
+    c.globalAlpha=alpha*0.3;
+    c.beginPath(); c.arc(pt.x,pt.y,r*2.1,0,6.2832); c.fill();
+  } else {
+    c.globalCompositeOperation='source-over';
+    c.globalAlpha=alpha*0.28;
+    c.beginPath(); c.arc(pt.x,pt.y,r*1.9,0,6.2832); c.fill();
+    c.globalAlpha=alpha*0.95;
+    c.beginPath(); c.arc(pt.x,pt.y,r,0,6.2832); c.fill();
+  }
+}
+
+function rebuildAcc(throughYear){
+  actx.setTransform(1,0,0,1,0,0); actx.clearRect(0,0,acc.width,acc.height); actx.setTransform(dpr,0,0,dpr,0,0);
+  const end = perYearIdx[throughYear - yMin + 1] ?? PTS.length;
+  for(let i=0;i<end;i++) stampPoint(actx, PTS[i], 1);
+  actx.globalAlpha=1; actx.globalCompositeOperation='source-over';
+  stampedYear = throughYear;
+  anchorLL = map.getCenter();
+  anchorPx0 = map.latLngToContainerPoint(anchorLL);
+}
+
+function draw(){
+  const yr = Math.floor(t);
+  if(yr-1 > stampedYear) rebuildAcc(Math.min(yr-1,yMax));   // bake fully completed years
+
+  ctx.setTransform(1,0,0,1,0,0); ctx.clearRect(0,0,fx.width,fx.height); ctx.setTransform(dpr,0,0,dpr,0,0);
+  // baked layer, translated by pan delta
+  let ox=0,oy=0;
+  if(anchorLL){ const now=map.latLngToContainerPoint(anchorLL); ox=now.x-anchorPx0.x; oy=now.y-anchorPx0.y; }
+  ctx.globalCompositeOperation = colorMode==='solar' ? 'lighter' : 'source-over';
+  ctx.globalAlpha=1;
+  ctx.drawImage(acc, ox*dpr, oy*dpr, acc.width, acc.height, 0,0, fx.clientWidth, fx.clientHeight);
+
+  // frontier: the year currently filling in
+  const frac = t - yr;
+  if(yr>=yMin && yr<=yMax){
+    const s = perYearIdx[yr-yMin] ?? 0;
+    const e = perYearIdx[yr-yMin+1] ?? PTS.length;
+    const reveal = s + Math.floor((e-s)*frac);
+    for(let i=s;i<reveal;i++) stampPoint(ctx, PTS[i], 1);
+    // leading sparkle on the most recent few
+    for(let i=Math.max(s,reveal-50);i<reveal;i++){
+      const p=PTS[i], pt=map.latLngToContainerPoint([p[1],p[0]]);
+      ctx.globalAlpha=0.5; ctx.fillStyle='#fff';
+      ctx.beginPath(); ctx.arc(pt.x,pt.y,radiusFor(p)*0.7,0,6.2832); ctx.fill();
+    }
+  }
+  ctx.globalAlpha=1; ctx.globalCompositeOperation='source-over';
+  updateHUD(yr, frac);
+}
+
+function updateHUD(yr, frac){
+  if(yr>yMax){ yr=yMax; frac=1; }
+  yr=Math.max(yMin,Math.min(yMax,yr));
+  const i=yr-yMin;
+  const prevC=i>0?cumCount[i-1]:0, prevM=i>0?cumMW[i-1]:0;
+  const c=Math.round(prevC+(cumCount[i]-prevC)*frac);
+  const mw=(prevM+(cumMW[i]-prevM)*frac);
+  document.getElementById('yr').textContent=yr;
+  document.getElementById('ct').textContent=c.toLocaleString();
+  document.getElementById('mw').textContent=mw.toFixed(0);
+  const mx=FINALMAX[boroMetric];
+  for(let b=0;b<5;b++){
+    const cnt=boroCumByYear[i][b];
+    const v=metricVal(cnt,b,boroMetric);
+    const bf=document.getElementById('bf'+b), bc=document.getElementById('bc'+b);
+    if(bf) bf.style.width=(100*v/mx)+'%';
+    if(bc) bc.textContent=fmtMetric(v,boroMetric);
+  }
+  document.getElementById('scrub').value = Math.round(1000*(t-yMin)/(TMAX-yMin));
+}
+
+function tick(ts){
+  if(playing){
+    if(!lastTs) lastTs=ts;
+    t += (ts-lastTs)/1000*SPEED; lastTs=ts;
+    if(t>=TMAX){ t=TMAX; playing=false; setPlayIcon(); }
+  }
+  draw();
+  requestAnimationFrame(tick);
+}
+function setPlayIcon(){ document.getElementById('play').innerHTML = playing?'&#10074;&#10074;':'&#9658;'; }
+
+function resetView(){ anchorLL=null; stampedYear=-1; rebuildAcc(Math.min(Math.floor(t)-1,yMax)); }
+map.on('moveend zoomend',()=>{ sizeCanvas(); resetView(); });
+window.addEventListener('resize',()=>{ sizeCanvas(); resetView(); });
+
+document.getElementById('play').onclick=()=>{
+  if(t>=TMAX) t=yMin;
+  playing=!playing; lastTs=0; setPlayIcon();
+};
+document.getElementById('scrub').oninput=e=>{
+  playing=false; setPlayIcon();
+  t=yMin+(TMAX-yMin)*e.target.value/1000;
+  stampedYear=-1;
+};
+document.getElementById('mode').onchange=e=>{ colorMode=e.target.value; stampedYear=-1; buildLegend(); };
+
+document.getElementById('ai-btn').onclick=()=>{
+  const p=document.getElementById('ai-pop'); p.style.display=p.style.display==='block'?'none':'block';
+};
+
+function buildLegend(){
+  const t=document.getElementById('leg-ttl'), box=document.getElementById('leg-items');
+  let items=[];
+  if(colorMode==='boro'){ t.textContent='Borough'; items=BOROS.map((n,i)=>[BORO_COL[i],n]); }
+  else if(colorMode==='sector'){ t.textContent='Sector'; items=[[SECTOR_COL[0],'Home (residential)'],[SECTOR_COL[1],'Business / other']]; }
+  else if(colorMode==='dac'){ t.textContent='Disadvantaged community'; items=[[DAC_COL[1],'Inside a NYS DAC'],[DAC_COL[0],'Outside']]; }
+  else { t.textContent='Each dot = one project'; items=[['#ffc640','Completed solar install']]; }
+  box.innerHTML=items.map(([c,l])=>`<div class="item"><span class="dot" style="background:${c}"></span>${l}</div>`).join('');
+}
+
+function buildBoros(){
+  const order=ORDER[boroMetric];
+  document.getElementById('brows').innerHTML = order.map(i=>
+    `<div class="brow"><span class="nm">${BOROS[i]}</span><span class="track"><span class="fill" id="bf${i}" style="background:${BORO_COL[i]}"></span></span><span class="ct" id="bc${i}">0</span></div>`
+  ).join('');
+  document.getElementById('boro-ttl').textContent=BTITLES[boroMetric];
+}
+document.querySelectorAll('#boro-metric button').forEach(btn=>btn.onclick=()=>{
+  boroMetric=btn.dataset.m;
+  document.querySelectorAll('#boro-metric button').forEach(b=>b.classList.toggle('on',b.dataset.m===boroMetric));
+  buildBoros();
+});
+
+fetch('data/solar.json').then(r=>r.json()).then(data=>{
+  PTS=data;
+  yMin=PTS[0][2]; yMax=PTS[PTS.length-1][2]; TMAX=yMax+1;
+  for(let y=yMin;y<=yMax;y++) YEARS.push(y);
+  // index where each year begins (PTS sorted by year)
+  perYearIdx=new Array(YEARS.length+1).fill(0);
+  let yi=0;
+  for(let i=0;i<PTS.length;i++){
+    while(PTS[i][2]>yMin+yi){ yi++; perYearIdx[yi]=i; }
+  }
+  for(let k=yi+1;k<=YEARS.length;k++) perYearIdx[k]=PTS.length;
+  // cumulative count / MW / borough
+  let cc=0, cm=0, bc=[0,0,0,0,0];
+  for(let i=0;i<YEARS.length;i++){
+    const s=perYearIdx[i], e=perYearIdx[i+1];
+    for(let j=s;j<e;j++){ cc++; cm+=PTS[j][3]; bc[PTS[j][6]]++; }
+    cumCount.push(cc); cumMW.push(cm/1000); boroCumByYear.push(bc.slice());
+  }
+  const last=YEARS.length-1;
+  for(const m of ['total','permi','percap']){
+    const vals=[0,1,2,3,4].map(b=>metricVal(boroCumByYear[last][b],b,m));
+    FINALMAX[m]=Math.max(...vals)||1;
+    ORDER[m]=[0,1,2,3,4].slice().sort((a,b)=>vals[b]-vals[a]);
+  }
+  buildBoros(); buildLegend(); sizeCanvas();
+  t=yMin; resetView();
+  requestAnimationFrame(tick);
+  setTimeout(()=>{ playing=true; setPlayIcon(); }, 700);
+});
+</script>
+</body>
+</html>
