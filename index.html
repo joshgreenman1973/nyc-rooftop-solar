@@ -63,6 +63,10 @@
   #yearchart #hx-peak{color:#caa23a;text-transform:none;letter-spacing:0;margin-left:6px}
   #yearchart canvas{display:block;width:100%;height:78px}
   #yearchart .hx{display:flex;justify-content:space-between;font-size:10.5px;color:#7d8b9d;margin-top:3px}
+  #yearchart .brknote{margin-top:6px;padding-top:6px;border-top:1px solid rgba(255,255,255,0.08);
+    font-size:10.5px;line-height:1.45;color:#8fa0b6}
+  #yearchart .brknote b{color:#b9c8dc;font-weight:600}
+  #yearchart .brknote a{color:#8fa0b6}
 
   #dock{position:absolute;left:50%;transform:translateX(-50%);bottom:18px;z-index:600;
     width:min(900px,calc(100% - 32px));padding:12px 18px;display:flex;align-items:center;gap:14px;
@@ -106,7 +110,7 @@
 
 <div id="header" class="panel">
   <h1>Where New York City went solar</h1>
-  <p>Every solar installation completed through New York's NY-Sun incentive program across the five boroughs, animated by the year its application was filed.</p>
+  <p>Every solar installation completed through New York's NY-Sun incentive program across the five boroughs, animated by the year its application was filed. The program's Con Edison residential incentive ran out in May 2025, so the last two years count a closing program rather than the rooftop market.</p>
   <div class="src">Source: NYSERDA, Solar Electric Programs (<a href="https://data.ny.gov/d/3x8r-34rs" target="_blank" rel="noopener">data.ny.gov</a>). <a href="methodology.html" target="_blank">Methodology</a> <button id="ai-btn">AI caution</button></div>
   <div id="ai-pop">
     <h4>How this was made</h4>
@@ -115,8 +119,9 @@
       <li>Points come straight from NYSERDA's published dataset, not estimated.</li>
       <li>Counts and capacity were checked against the source totals.</li>
       <li>Only completed projects with valid coordinates are shown.</li>
+      <li>The 2025 fall was traced to a dated program change, not assumed.</li>
     </ul>
-    <div style="margin-top:8px">Limits: positions are NYSERDA-geocoded; the year reflects the application date, not the day panels switched on. See the <a href="methodology.html" target="_blank">methodology</a>.</div>
+    <div style="margin-top:8px">Limits: positions are NYSERDA-geocoded; the year reflects the application date, not the day panels switched on; and 2025 to 2026 undercount real installations for the reasons noted on the chart. See the <a href="methodology.html" target="_blank">methodology</a>.</div>
   </div>
 </div>
 
@@ -146,6 +151,10 @@
   <div class="ttl">Installations per year <span id="hx-peak"></span></div>
   <canvas id="histo"></canvas>
   <div class="hx"><span id="hx-min">2002</span><span id="hx-max">2026</span></div>
+  <div class="brknote"><b>Muted bars are not comparable.</b> NY-Sun's Con Edison residential
+    incentive block was fully subscribed on May&nbsp;29,&nbsp;2025. Monthly applications fell from 737 in
+    May to 185 in June and never recovered, so most rooftop projects after that date no longer
+    enter this dataset at all. <a href="methodology.html#break" target="_blank">Why the line breaks</a></div>
 </div>
 
 <div id="dock">
@@ -200,6 +209,11 @@ function sizeHisto(){
   const w=histoEl.clientWidth, h=histoEl.clientHeight;
   histoEl.width=w*dpr; histoEl.height=h*dpr; hctx.setTransform(dpr,0,0,dpr,0,0);
 }
+// NY-Sun's Con Edison residential MW block was fully subscribed 2025-05-29. From that
+// point the dataset tracks a shrinking incentive program, not the rooftop market, so
+// these years are drawn in a cold grey and fenced off rather than read as a trend.
+const BREAK_YEAR = 2025;
+
 function drawHisto(){
   if(!yearCounts.length) return;
   const w=histoEl.clientWidth, h=histoEl.clientHeight;
@@ -208,8 +222,25 @@ function drawHisto(){
   const curYr=Math.min(Math.floor(t),yMax);
   for(let i=0;i<n;i++){
     const yr=yMin+i, bh=Math.max(1,(yearCounts[i]/HMAX)*(h-3)), x=i*(bw+gap), y=h-bh;
-    hctx.fillStyle = yr>curYr ? 'rgba(255,255,255,0.13)' : (yr===curYr ? '#ffd266' : '#caa23a');
+    const broken = yr>=BREAK_YEAR;
+    if(yr>curYr)        hctx.fillStyle = broken ? 'rgba(150,170,200,0.10)' : 'rgba(255,255,255,0.13)';
+    else if(yr===curYr) hctx.fillStyle = broken ? '#8fa7c4' : '#ffd266';
+    else                hctx.fillStyle = broken ? '#63748c' : '#caa23a';
     hctx.fillRect(x,y,bw,bh);
+  }
+  // fence line at the break, drawn in the gutter before the first affected bar
+  const bi = BREAK_YEAR - yMin;
+  if(bi>0 && bi<n){
+    const fx0 = Math.round(bi*(bw+gap) - gap/2) + 0.5;
+    hctx.save();
+    hctx.strokeStyle='rgba(159,182,230,0.55)'; hctx.lineWidth=1; hctx.setLineDash([3,3]);
+    hctx.beginPath(); hctx.moveTo(fx0,4); hctx.lineTo(fx0,h); hctx.stroke();
+    hctx.restore();
+    // caret at the top of the fence; the note below the chart carries the explanation,
+    // so no text here — the tallest bars sit right against this line
+    hctx.fillStyle='#9fb6e6';
+    hctx.beginPath();
+    hctx.moveTo(fx0-3.5,0); hctx.lineTo(fx0+3.5,0); hctx.lineTo(fx0,5); hctx.closePath(); hctx.fill();
   }
 }
 

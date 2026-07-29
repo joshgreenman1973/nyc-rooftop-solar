@@ -31,7 +31,7 @@
   <p>Each dot is one completed solar electric project in one of the five boroughs of New York City, drawn at its reported location. As the timeline plays, projects appear in the year their incentive application was received, so the animation traces where and when solar spread across the city.</p>
 
   <h2>Data source</h2>
-  <p>All points come from a single public dataset: <a href="https://data.ny.gov/d/3x8r-34rs" target="_blank" rel="noopener">Solar Electric Programs Reported by NYSERDA: Beginning 2000</a>, published by the New York State Energy Research and Development Authority on the NY Open Data portal (dataset id <code>3x8r-34rs</code>). The data used here was pulled in June 2026.</p>
+  <p>All points come from a single public dataset: <a href="https://data.ny.gov/d/3x8r-34rs" target="_blank" rel="noopener">Solar Electric Programs Reported by NYSERDA: Beginning 2000</a>, published by the New York State Energy Research and Development Authority on the NY Open Data portal (dataset id <code>3x8r-34rs</code>). The data used here was pulled on July 29, 2026.</p>
   <p>This dataset covers projects that went through NYSERDA's NY-Sun incentive program. It is the most complete public, address-level record of distributed solar in New York, but it is not a literal census of every panel ever installed: systems built entirely outside NYSERDA programs may not appear, and utility-scale projects larger than 5 megawatts (alternating current) are excluded by NYSERDA. In practice, the overwhelming majority of residential and small-commercial rooftop systems in New York City run through NY-Sun, so coverage of the rooftop segment shown here is high.</p>
   <p>New York City does not publish a more complete address-level alternative. The city's own solar datasets are narrow (the Local Law 24 set covers only city-owned buildings). The genuinely exhaustive records sit with the utility (Con Edison interconnection) and the Department of Buildings (DOB NOW solar job filings), neither of which is released as a clean point-level public dataset.</p>
 
@@ -41,7 +41,32 @@
     <li><strong>Status:</strong> <code>project_status = "Complete"</code>. Pipeline (not-yet-built) projects are excluded.</li>
     <li><strong>Location:</strong> a valid latitude and longitude is present, and the point falls within a New York City bounding box (40.45 to 40.95 N, -74.30 to -73.65 W). A small number of records with missing or out-of-range coordinates are dropped.</li>
   </ul>
-  <p>After filtering, the map contains <strong>59,455 completed installations</strong> totaling <strong>about 613 megawatts</strong> of nameplate direct-current capacity.</p>
+  <p>After filtering, the map contains <strong>59,545 completed installations</strong> totaling <strong>about 616 megawatts</strong> of nameplate direct-current capacity.</p>
+
+  <h2 id="break">Why the line breaks after May 2025</h2>
+  <p>The per-year chart shows a steep fall in 2025 and a near-empty 2026. That is not a collapse in rooftop solar. It is the incentive program this dataset tracks running out of money in New York City.</p>
+  <p>Applications do not taper off across 2025. They fall off a cliff in a single month:</p>
+  <table>
+    <tr><th>Month</th><th>NYC applications received</th></tr>
+    <tr><td>March 2025</td><td>599</td></tr>
+    <tr><td>April 2025</td><td>617</td></tr>
+    <tr><td>May 2025</td><td>737</td></tr>
+    <tr><td>June 2025</td><td>185</td></tr>
+    <tr><td>July 2025</td><td>227</td></tr>
+    <tr><td>Monthly average, July 2025 to June 2026</td><td>about 120</td></tr>
+  </table>
+  <p>The date lines up with a specific administrative event. NYSERDA allocates NY-Sun incentives in capacity blocks by utility territory and sector, and when a block is fully subscribed it closes. Per NYSERDA's <a href="https://www.nyserda.ny.gov/All-Programs/NY-Sun/Contractors/Dashboards-and-incentives/ConEd-Dashboard" target="_blank" rel="noopener">Con Edison dashboard</a>, the Con Edison <strong>residential Block 10 closed on May 29, 2025</strong>, exhausting the residential megawatt-block capacity for the territory that covers most of New York City. The nonresidential block for systems up to 200 kW had closed on May 1, 2025. NYSERDA's <a href="https://www.nyserda.ny.gov/-/media/Project/Nyserda/Files/Programs/NY-Sun/Updated-NYSun-Operating-Plan-and-New-Capacity-Blocks-Webinar-Slides-72925.pdf" target="_blank" rel="noopener">July 2025 operating plan update</a> replaced the closed residential block with a narrower SEEF block aimed at low- and moderate-income customers.</p>
+  <p>Because this dataset is a record of NY-Sun program participation, a project with no incentive to apply for generates no row. The composition of what survives confirms the mechanism. Comparing average monthly applications in January to May 2025 against June 2025 to June 2026:</p>
+  <table>
+    <tr><th>Segment</th><th>Before</th><th>After</th><th>Change</th></tr>
+    <tr><td>Residential, outside a disadvantaged community</td><td>376</td><td>48</td><td>-87%</td></tr>
+    <tr><td>Residential, inside a disadvantaged community</td><td>169</td><td>30</td><td>-82%</td></tr>
+    <tr><td>Non-residential</td><td>60</td><td>43</td><td>-29%</td></tr>
+  </table>
+  <p>Market-rate residential, exactly the segment whose block closed, falls hardest. Non-residential holds up best, consistent with its larger block staying open until September 2025.</p>
+  <p><strong>The federal tax credit is not the explanation for this break.</strong> The Section 25D residential clean energy credit was repealed by Public Law 119-21, signed July 4, 2025, for expenditures made after December 31, 2025 (see the <a href="https://www.irs.gov/newsroom/faqs-for-modification-of-sections-25c-25d-25e-30c-30d-45l-45w-and-179d-under-public-law-119-21-139-stat-72-july-4-2025-commonly-known-as-the-one-big-beautiful-bill-obbb" target="_blank" rel="noopener">IRS guidance</a> and the <a href="https://www.congress.gov/crs-product/IN12611" target="_blank" rel="noopener">Congressional Research Service summary</a>). That is a month after the break in this data, and it would produce the opposite shape: a rush to finish systems through late 2025, then a fall in 2026. It may well be adding to the weakness in the 2026 figures, but it cannot have caused a drop that had already happened.</p>
+  <p><strong>A second, smaller effect:</strong> the map is filtered to completed projects, and projects take time to move from application to completion, so the most recent years are also understated by that lag. As of this pull, New York City applications received in 2025 number 3,683 complete plus 521 still in the pipeline; for 2026, 140 complete plus 346 in the pipeline. Only the completed ones are drawn.</p>
+  <p>For both reasons, the 2025 and 2026 bars are drawn in a muted color and fenced off. They should not be read as a measure of how much solar New York City installed in those years.</p>
 
   <h2>How each field is used</h2>
   <table>
@@ -72,6 +97,7 @@
     <li><strong>Counts are projects, not buildings.</strong> A single address could in principle host more than one project record.</li>
     <li><strong>Capacity is nameplate, not output.</strong> Megawatt figures are rated direct-current capacity, not measured generation.</li>
     <li><strong>Geocoding is as published.</strong> Positions are taken directly from NYSERDA and were not independently re-geocoded.</li>
+    <li><strong>2025 and 2026 are not comparable to earlier years.</strong> See <a href="#break">why the line breaks after May 2025</a>.</li>
   </ul>
 
   <h2>Reproducing the numbers</h2>
