@@ -188,11 +188,11 @@ const map = L.map('map',{zoomControl:false,attributionControl:true,
   .setView([40.706,-73.92],11);
 L.control.zoom({position:'bottomright'}).addTo(map);
 map.setMaxBounds([[40.40,-74.35],[40.99,-73.65]]);
-L.tileLayer('https://{s}.basemaps.cartocdn.com/dark_nolabels/{z}/{x}/{y}{r}.png',{
+L.tileLayer('https://{s}.basemaps.cartocdn.com/dark_nolabels/{z}/{x}/{y}{r}.png?key=cb1_2r82_1_ae4e70b6166057bc41b89638',{
   subdomains:'abcd',maxZoom:19,
   attribution:'&copy; OpenStreetMap, &copy; CARTO &nbsp;|&nbsp; data: NYSERDA / NY Open Data'
 }).addTo(map);
-L.tileLayer('https://{s}.basemaps.cartocdn.com/dark_only_labels/{z}/{x}/{y}{r}.png',{
+L.tileLayer('https://{s}.basemaps.cartocdn.com/dark_only_labels/{z}/{x}/{y}{r}.png?key=cb1_2r82_1_ae4e70b6166057bc41b89638',{
   subdomains:'abcd',maxZoom:19,pane:'shadowPane',opacity:0.7
 }).addTo(map);
 
